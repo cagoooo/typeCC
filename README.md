@@ -1,6 +1,6 @@
 # 中文注音打字遊戲 Pro (Zhuyin Challenge Pro)
 
-![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.1-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 這是一個專為繁體中文使用者設計的注音打字練習遊戲，旨在幫助學生與初學者提升注音輸入的速度與準確度。

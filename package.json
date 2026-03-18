@@ -1,7 +1,7 @@
 {
   "name": "typecc-pro",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.2.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,13 +10,14 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.1",
+    "@tailwindcss/vite": "^4.2.1",
     "autoprefixer": "^10.4.27",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.1",
     "vite": "^6.0.0"
   },
   "dependencies": {
-    "firebase": "^12.10.0",
+    "firebase": "^10.8.0",
     "html2canvas": "^1.4.1"
   }
 }

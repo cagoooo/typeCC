@@ -1,4 +1,6 @@
+import './style.css';
 import { audio } from './audio.js';
+
 import { auth, signInAnonymously } from './firebase.js';
 import { saveScore, getTopScores } from './leaderboard.js';
 
@@ -91,7 +93,7 @@ let completedCount = 0;
 let score = 0;
 let timeLeft = 180;
 let timer;
-let initialCharactersOnScreen = 4; // 減少初始數量代碼內容代碼內容代碼內容
+let initialCharactersOnScreen = 4; // 減少初始數量
 let isComposing = false; // 用於追蹤注音輸入法組字狀態
 
 const startScreen = document.getElementById('start-screen');
@@ -196,7 +198,7 @@ function spawnNewCharacter() {
         if (this.parentNode) {
             this.parentNode.removeChild(this);
         }
-        // 移除自動補位的遞迴呼叫，改由定時生成器控制代碼內容代碼內容代碼內容
+        // 移除自動補位的遞迴呼叫，改由定時生成器控制
     });
 }
 
@@ -208,13 +210,13 @@ function startSpawning() {
     const spawn = () => {
         if (!gameActive) return;
 
-        // 限制畫面上字元數上限，避免三年級小學生壓力過大代碼內容代碼內容代碼內容
+        // 限制畫面上字元數上限，避免三年級小學生壓力過大
         const maxOnScreen = currentDifficulty === 'beginner' ? 5 : (currentDifficulty === 'easy' ? 8 : 12);
         if (fallingCharacters.length < maxOnScreen) {
             spawnNewCharacter();
         }
 
-        // 隨機化下一代的間隔，增加趣味性同時避免瞬間大量噴出代碼內容代碼內容代碼內容
+        // 隨機化下一代的間隔，增加趣味性同時避免瞬間大量噴出
         const nextInterval = baseInterval * (0.8 + Math.random() * 0.4);
         spawnTimer = setTimeout(spawn, nextInterval);
     };
@@ -252,7 +254,7 @@ function startGame() {
         }
     }, 1000);
 
-    startSpawning(); // 開始定時生成代碼內容代碼內容代碼內容
+    startSpawning(); // 開始定時生成
 
 
     inputField.focus();
@@ -262,7 +264,7 @@ function startGame() {
     for (let i = 0; i < initialCharactersOnScreen; i++) {
         setTimeout(() => {
             if (gameActive) spawnNewCharacter();
-        }, i * 1000); // 初始字元以間隔方式出現，減少開局壓力代碼內容代碼內容代碼內容
+        }, i * 1000); // 初始字元以間隔方式出現，減少開局壓力
     }
 }
 

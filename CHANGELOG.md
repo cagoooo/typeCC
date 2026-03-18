@@ -1,5 +1,11 @@
 # Changelog - 中文注音打字遊戲 Pro
 
+## [1.2.1] - 2026-03-18
+### Fixed
+- **Firebase 穩定性優化**：降級 Firebase SDK 至穩定版 v10.8.0 並微調初始化順序，徹底解決 Firestore 可能出現的 `Service not available` 報錯。
+- **PWA 圖示修復**：更新 `manifest.json` 使用 Google 官方 Noto Emoji 圖示資源，修復連結失效導致的下載錯誤。
+- **UI 勘誤清理**：移除全專案中殘留的「代碼內容」文字，並修復遊戲結束畫面的按鈕佈局。
+
 ## [1.2.0] - 2026-03-18
 ### Added
 - **初學者模式 (Beginner Mode)**：為三年級小學生設計，極慢速且掉落稀疏，顯示完整注音與按鍵提示。
