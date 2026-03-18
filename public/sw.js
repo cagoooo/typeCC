@@ -16,7 +16,12 @@ self.addEventListener('install', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // 1. 排除開發環境必要的資源
+    // 1. 僅處理 GET 請求且僅限 http/https 協定
+    if (event.request.method !== 'GET' || !url.protocol.startsWith('http')) {
+        return;
+    }
+
+    // 2. 排除開發環境必要的資源
     if (
         url.pathname.includes('/@vite/client') ||
         url.pathname.includes('/@react-refresh') ||
@@ -25,7 +30,7 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // 2. 快取策略：Network First (因為是打字遊戲，內容可能更新，但要支援離線)
+    // 3. 快取策略：Network First (因為是打字遊戲，內容可能更新，但要支援離線)
     event.respondWith(
         fetch(event.request)
             .then((response) => {
