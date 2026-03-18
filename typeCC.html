@@ -1,0 +1,525 @@
+<html lang="zh-TW"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中文注音打字遊戲</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            overflow: hidden; /* Prevent scrollbars from falling characters */
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .falling-character {
+            position: absolute;
+            animation-timing-function: linear;
+            animation-fill-mode: forwards;
+            user-select: none;
+            display: flex;
+            flex-direction: column; /* 讓字和注音垂直排列 */
+            align-items: center;
+            justify-content: center;
+            width: 80px; /* 加寬以容納按鍵提示 */
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            font-weight: 700;
+            transition: transform 0.2s, opacity 0.2s;
+            padding: 5px;
+            text-align: center;
+        }
+        
+        .falling-character.hit {
+            transform: scale(1.5);
+            opacity: 0;
+            background: rgba(72, 219, 251, 0.8);
+        }
+        
+        @keyframes fall {
+            from {
+                transform: translateY(-80px); /* Start above screen */
+            }
+            to {
+                transform: translateY(100vh); /* Fall to bottom of screen */
+            }
+        }
+        
+        .input-area {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
+            border-top: 2px solid rgba(255, 255, 255, 0.2); 
+        }
+        
+        #input-field {
+            color: white;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            caret-color: #4fd1c5;
+        }
+        
+        #input-field::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .game-over-overlay {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        @media (max-width: 768px) { 
+            .falling-character {
+                width: 70px;
+                height: 70px;
+            }
+        }
+
+        @media (max-width: 640px) { 
+            .falling-character {
+                width: 65px;
+                height: 65px;
+            }
+        }
+    </style>
+</head>
+<body class="text-white">
+    <!-- 開始畫面 -->
+    <div id="start-screen" class="fixed inset-0 flex flex-col items-center justify-center z-50 bg-gradient-to-br from-indigo-900 to-purple-900 p-4">
+        <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold mb-8 text-center text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">中文注音打字遊戲</h1>
+        <p class="text-lg sm:text-xl mb-8 text-center max-w-md px-4">挑戰你的中文注音打字速度！輸入正確的注音符號或對應按鍵來消滅從天而降的字元。</p>
+        <button id="start-button" class="px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-lg sm:text-xl font-bold rounded-full hover:from-blue-600 hover:to-cyan-600 transition-all transform hover:scale-105 shadow-lg">開始遊戲</button>
+    </div>
+
+    <!-- 遊戲畫面 -->
+    <div id="game-container" class="hidden h-screen w-full relative">
+        <!-- 狀態欄 -->
+        <div class="fixed top-0 left-0 right-0 p-2 sm:p-4 flex flex-wrap justify-around items-center gap-2 sm:gap-4 bg-black bg-opacity-30 backdrop-blur-sm z-10">
+            <div class="bg-blue-900 bg-opacity-50 px-3 py-1 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base">
+                <span class="font-medium">已完成: </span>
+                <span id="completed-count" class="text-base sm:text-lg font-bold text-cyan-400">0</span>
+            </div>
+            <div class="bg-purple-900 bg-opacity-50 px-3 py-1 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base">
+                <span class="font-medium">分數: </span>
+                <span id="score" class="text-base sm:text-lg font-bold text-yellow-400">0</span>
+            </div>
+            <div class="bg-red-900 bg-opacity-50 px-3 py-1 sm:px-4 sm:py-2 rounded-lg text-sm sm:text-base">
+                <span class="font-medium">時間: </span>
+                <span id="timer" class="text-base sm:text-lg font-bold text-red-400">180</span>
+                <span class="font-medium">秒</span>
+            </div>
+        </div>
+        
+        <div id="characters-container" class="w-full h-full"></div>
+        
+        <div class="fixed bottom-0 left-0 right-0 p-2 sm:p-4 input-area">
+            <div class="relative">
+                <input type="text" id="input-field" class="w-full px-4 py-3 sm:px-6 sm:py-4 text-lg sm:text-xl bg-gray-800 bg-opacity-70 border-2 border-cyan-500 rounded-full text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-400" placeholder="請直接輸入注音或對應按鍵..." autocomplete="off">
+            </div>
+        </div>
+    </div>
+    
+    <div id="game-over" class="hidden fixed inset-0 flex flex-col items-center justify-center game-over-overlay z-50 p-4">
+        <div class="bg-gradient-to-br from-gray-900 to-blue-900 p-6 sm:p-8 rounded-2xl max-w-md w-full border border-blue-500 shadow-2xl">
+            <h2 id="game-over-title" class="text-2xl sm:text-3xl font-bold mb-4 text-center text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">遊戲結束</h2>
+            <div class="space-y-3 sm:space-y-4 mb-6 text-base sm:text-lg">
+                <p class="text-lg sm:text-xl text-center">你的成績：</p>
+                <div class="flex justify-between items-center border-b border-gray-700 pb-2">
+                    <span>完成字元：</span>
+                    <span id="final-completed" class="font-bold text-cyan-400">0</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-gray-700 pb-2">
+                    <span>最終得分：</span>
+                    <span id="final-score" class="font-bold text-yellow-400">0</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span>剩餘時間：</span>
+                    <span id="final-time" class="font-bold text-red-400">0秒</span>
+                </div>
+            </div>
+            <div class="flex justify-center">
+                <button id="restart-button" class="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-base sm:text-lg font-bold rounded-full hover:from-blue-600 hover:to-cyan-600 transition-all transform hover:scale-105 shadow-lg">再玩一次</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const bopomofoKeyMap = {
+            'ㄅ': '1', 'ㄆ': 'q', 'ㄇ': 'a', 'ㄈ': 'z', 'ㄉ': '2', 'ㄊ': 'w', 'ㄋ': 's', 'ㄌ': 'x',
+            'ㄍ': 'e', 'ㄎ': 'd', 'ㄏ': 'c', 'ㄐ': 'r', 'ㄑ': 'f', 'ㄒ': 'v', 'ㄓ': '5', 'ㄔ': 't',
+            'ㄕ': 'g', 'ㄖ': 'b', 'ㄗ': 'y', 'ㄘ': 'h', 'ㄙ': 'n', 'ㄧ': 'u', 'ㄨ': 'j', 'ㄩ': 'm',
+            'ㄚ': '8', 'ㄛ': 'i', 'ㄜ': 'k', 'ㄝ': ',', 'ㄞ': '9', 'ㄟ': 'o', 'ㄠ': 'l', 'ㄡ': '.',
+            'ㄢ': '0', 'ㄣ': 'p', 'ㄤ': ';', 'ㄥ': '/', 'ㄦ': '-',
+            'ˊ': '6', 'ˇ': '3', 'ˋ': '4', '˙': '7'
+        };
+
+        const characterData = [
+            { char: '的', bopomofo: 'ㄉㄜ˙' }, { char: '一', bopomofo: 'ㄧ' }, { char: '是', bopomofo: 'ㄕˋ' }, { char: '不', bopomofo: 'ㄅㄨˋ' },
+            { char: '了', bopomofo: 'ㄌㄜ˙' }, { char: '有', bopomofo: 'ㄧㄡˇ' }, { char: '和', bopomofo: 'ㄏㄜˊ' }, { char: '人', bopomofo: 'ㄖㄣˊ' },
+            { char: '這', bopomofo: 'ㄓㄜˋ' }, { char: '中', bopomofo: 'ㄓㄨㄥ' }, { char: '大', bopomofo: 'ㄉㄚˋ' }, { char: '為', bopomofo: 'ㄨㄟˊ' },
+            { char: '上', bopomofo: 'ㄕㄤˋ' }, { char: '個', bopomofo: 'ㄍㄜˋ' }, { char: '國', bopomofo: 'ㄍㄨㄛˊ' }, { char: '我', bopomofo: 'ㄨㄛˇ' },
+            { char: '以', bopomofo: 'ㄧˇ' }, { char: '要', bopomofo: 'ㄧㄠˋ' }, { char: '他', bopomofo: 'ㄊㄚ' }, { char: '時', bopomofo: 'ㄕˊ' },
+            { char: '來', bopomofo: 'ㄌㄞˊ' }, { char: '用', bopomofo: 'ㄩㄥˋ' }, { char: '們', bopomofo: 'ㄇㄣ˙' }, { char: '生', bopomofo: 'ㄕㄥ' },
+            { char: '到', bopomofo: 'ㄉㄠˋ' }, { char: '作', bopomofo: 'ㄗㄨㄛˋ' }, { char: '地', bopomofo: 'ㄉㄧˋ' }, { char: '於', bopomofo: 'ㄩˊ' },
+            { char: '出', bopomofo: 'ㄔㄨ' }, { char: '就', bopomofo: 'ㄐㄧㄡˋ' }, { char: '分', bopomofo: 'ㄈㄣ' }, { char: '對', bopomofo: 'ㄉㄨㄟˋ' },
+            { char: '成', bopomofo: 'ㄔㄥˊ' }, { char: '會', bopomofo: 'ㄏㄨㄟˋ' }, { char: '可', bopomofo: 'ㄎㄜˇ' }, { char: '主', bopomofo: 'ㄓㄨˇ' },
+            { char: '發', bopomofo: 'ㄈㄚ' }, { char: '年', bopomofo: 'ㄋㄧㄢˊ' }, { char: '動', bopomofo: 'ㄉㄨㄥˋ' }, { char: '同', bopomofo: 'ㄊㄨㄥˊ' },
+            { char: '工', bopomofo: 'ㄍㄨㄥ' }, { char: '也', bopomofo: 'ㄧㄝˇ' }, { char: '能', bopomofo: 'ㄋㄥˊ' }, { char: '下', bopomofo: 'ㄒㄧㄚˋ' },
+            { char: '過', bopomofo: 'ㄍㄨㄛˋ' }, { char: '子', bopomofo: 'ㄗˇ' }, { char: '說', bopomofo: 'ㄕㄨㄛ' }, { char: '產', bopomofo: 'ㄔㄢˇ' },
+            { char: '種', bopomofo: 'ㄓㄨㄥˇ' }, { char: '面', bopomofo: 'ㄇㄧㄢˋ' }, { char: '而', bopomofo: 'ㄦˊ' }, { char: '方', bopomofo: 'ㄈㄤ' },
+            { char: '後', bopomofo: 'ㄏㄡˋ' }, { char: '多', bopomofo: 'ㄉㄨㄛ' }, { char: '定', bopomofo: 'ㄉㄧㄥˋ' }, { char: '行', bopomofo: 'ㄒㄧㄥˊ' },
+            { char: '學', bopomofo: 'ㄒㄩㄝˊ' }, { char: '法', bopomofo: 'ㄈㄚˇ' }, { char: '所', bopomofo: 'ㄙㄨㄛˇ' }, { char: '民', bopomofo: 'ㄇㄧㄣˊ' },
+            { char: '得', bopomofo: 'ㄉㄜˊ' }, { char: '經', bopomofo: 'ㄐㄧㄥ' }, { char: '十', bopomofo: 'ㄕˊ' }, { char: '三', bopomofo: 'ㄙㄢ' },
+            { char: '之', bopomofo: 'ㄓ' }, { char: '進', bopomofo: 'ㄐㄧㄣˋ' }, { char: '著', bopomofo: 'ㄓㄜ˙' }, { char: '等', bopomofo: 'ㄉㄥˇ' },
+            { char: '部', bopomofo: 'ㄅㄨˋ' }, { char: '度', bopomofo: 'ㄉㄨˋ' }, { char: '家', bopomofo: 'ㄐㄧㄚ' }, { char: '電', bopomofo: 'ㄉㄧㄢˋ' },
+            { char: '力', bopomofo: 'ㄌㄧˋ' }, { char: '裡', bopomofo: 'ㄌㄧˇ' }, { char: '如', bopomofo: 'ㄖㄨˊ' }, { char: '水', bopomofo: 'ㄕㄨㄟˇ' },
+            { char: '化', bopomofo: 'ㄏㄨㄚˋ' }, { char: '高', bopomofo: 'ㄍㄠ' }, { char: '自', bopomofo: 'ㄗˋ' }, { char: '二', bopomofo: 'ㄦˋ' },
+            { char: '理', bopomofo: 'ㄌㄧˇ' }, { char: '起', bopomofo: 'ㄑㄧˇ' }, { char: '小', bopomofo: 'ㄒㄧㄠˇ' }, { char: '物', bopomofo: 'ㄨˋ' },
+            { char: '現', bopomofo: 'ㄒㄧㄢˋ' }, { char: '實', bopomofo: 'ㄕˊ' }, { char: '加', bopomofo: 'ㄐㄧㄚ' }, { char: '量', bopomofo: 'ㄌㄧㄤˋ' },
+            { char: '都', bopomofo: 'ㄉㄡ' }, { char: '兩', bopomofo: 'ㄌㄧㄤˇ' }, { char: '體', bopomofo: 'ㄊㄧˇ' }, { char: '制', bopomofo: 'ㄓˋ' },
+            { char: '機', bopomofo: 'ㄐㄧ' }, { char: '當', bopomofo: 'ㄉㄤ' }, { char: '使', bopomofo: 'ㄕˇ' }, { char: '點', bopomofo: 'ㄉㄧㄢˇ' },
+            { char: '從', bopomofo: 'ㄘㄨㄥˊ' }, { char: '業', bopomofo: 'ㄧㄝˋ' }, { char: '本', bopomofo: 'ㄅㄣˇ' }, { char: '去', bopomofo: 'ㄑㄩˋ' },
+            { char: '把', bopomofo: 'ㄅㄚˇ' }, { char: '長', bopomofo: 'ㄓㄤˇ' }, { char: '見', bopomofo: 'ㄐㄧㄢˋ' }, { char: '己', bopomofo: 'ㄐㄧˇ' },
+            { char: '重', bopomofo: 'ㄓㄨㄥˋ' }, { char: '此', bopomofo: 'ㄘˇ' }, { char: '間', bopomofo: 'ㄐㄧㄢ' }, { char: '向', bopomofo: 'ㄒㄧㄤˋ' },
+            { char: '道', bopomofo: 'ㄉㄠˋ' }, { char: '命', bopomofo: 'ㄇㄧㄥˋ' }, { char: '想', bopomofo: 'ㄒㄧㄤˇ' }, { char: '情', bopomofo: 'ㄑㄧㄥˊ' },
+            { char: '事', bopomofo: 'ㄕˋ' }, { char: '知', bopomofo: 'ㄓ' }, { char: '者', bopomofo: 'ㄓㄜˇ' }, { char: '給', bopomofo: 'ㄍㄟˇ' },
+            { char: '次', bopomofo: 'ㄘˋ' }, { char: '你', bopomofo: 'ㄋㄧˇ' }, { char: '好', bopomofo: 'ㄏㄠˇ' }, { char: '朋', bopomofo: 'ㄆㄥˊ' },
+            { char: '友', bopomofo: 'ㄧㄡˇ' }, { char: '她', bopomofo: 'ㄊㄚ' }, { char: '快', bopomofo: 'ㄎㄨㄞˋ' }, { char: '樂', bopomofo: 'ㄌㄜˋ' },
+            { char: '愛', bopomofo: 'ㄞˋ' }, { char: '光', bopomofo: 'ㄍㄨㄤ' }, { char: '風', bopomofo: 'ㄈㄥ' }, { char: '花', bopomofo: 'ㄏㄨㄚ' },
+            { char: '山', bopomofo: 'ㄕㄢ' }, { char: '天', bopomofo: 'ㄊㄧㄢ' }, { char: '鳥', bopomofo: 'ㄋㄧㄠˇ' },
+            { char: '魚', bopomofo: 'ㄩˊ' }, { char: '書', bopomofo: 'ㄕㄨ' }, { char: '看', bopomofo: 'ㄎㄢˋ' }, { char: '聽', bopomofo: 'ㄊㄧㄥ' }
+        ];
+
+        function convertBopomofoToEnglish(bopomofo) {
+            const tones = ['ˊ', 'ˇ', 'ˋ', '˙'];
+            let keyString = '';
+            let hasTone = false;
+            for (const char of bopomofo) {
+                if (bopomofoKeyMap[char]) {
+                    keyString += bopomofoKeyMap[char];
+                    if (tones.includes(char)) {
+                        hasTone = true;
+                    }
+                }
+            }
+            if (!hasTone) {
+                keyString += ' '; // 一聲以空白鍵結尾
+            }
+            return keyString;
+        }
+
+        const characterDataWithKeys = characterData.map(data => ({
+            ...data,
+            englishKeys: convertBopomofoToEnglish(data.bopomofo)
+        }));
+
+        let gameActive = false;
+        let fallingCharacters = [];
+        let completedCount = 0;
+        let score = 0;
+        let timeLeft = 180; 
+        let timer;
+        let initialCharactersOnScreen = 7;
+        let isComposing = false; // 用於追蹤注音輸入法組字狀態
+        
+        const startScreen = document.getElementById('start-screen');
+        const startButton = document.getElementById('start-button');
+        const gameContainer = document.getElementById('game-container');
+        const charactersContainer = document.getElementById('characters-container');
+        const inputField = document.getElementById('input-field');
+        const completedCountElement = document.getElementById('completed-count');
+        const scoreElement = document.getElementById('score');
+        const timerElement = document.getElementById('timer');
+        const gameOverScreen = document.getElementById('game-over');
+        const gameOverTitle = document.getElementById('game-over-title');
+        const finalCompletedElement = document.getElementById('final-completed');
+        const finalScoreElement = document.getElementById('final-score');
+        const finalTimeElement = document.getElementById('final-time');
+        const restartButton = document.getElementById('restart-button');
+        
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', startGame);
+        
+        function getRandomUniqueCharacter() {
+            const onScreenChars = fallingCharacters.map(fc => fc.char);
+            let availableCharsData = characterDataWithKeys.filter(data => !onScreenChars.includes(data.char));
+            if (availableCharsData.length === 0) {
+                availableCharsData = [...characterDataWithKeys];
+            }
+            const randomIndex = Math.floor(Math.random() * availableCharsData.length);
+            return availableCharsData[randomIndex];
+        }
+
+        function spawnNewCharacter() {
+            if (!gameActive) return;
+
+            const charData = getRandomUniqueCharacter();
+            if (!charData) return; 
+
+            const charElement = document.createElement('div');
+            charElement.className = 'falling-character';
+            charElement.innerHTML = `<span class="text-2xl">${charData.char}</span><span class="text-xs text-cyan-300 mt-1">${charData.bopomofo} (${charData.englishKeys})</span>`;
+            
+            charElement.dataset.char = charData.char;
+            charElement.dataset.bopomofo = charData.bopomofo;
+            charElement.dataset.englishKeys = charData.englishKeys;
+
+            const containerWidth = charactersContainer.clientWidth;
+            let effectiveCharWidth = 80;
+            if (window.innerWidth <= 768) effectiveCharWidth = 70;
+            if (window.innerWidth <= 640) effectiveCharWidth = 65;
+
+            const left = Math.random() * (containerWidth - effectiveCharWidth);
+            charElement.style.left = `${Math.max(0, left)}px`;
+
+            const duration = 8 + Math.random() * 8;
+            charElement.style.animationName = 'fall';
+            charElement.style.animationDuration = `${duration}s`;
+
+            charactersContainer.appendChild(charElement);
+
+            const newFcData = {
+                element: charElement,
+                char: charData.char,
+                bopomofo: charData.bopomofo,
+                englishKeys: charData.englishKeys,
+                duration: duration,
+                startTime: Date.now()
+            };
+            fallingCharacters.push(newFcData);
+
+            charElement.addEventListener('animationend', function handleAnimationEnd() {
+                this.removeEventListener('animationend', handleAnimationEnd);
+                const index = fallingCharacters.findIndex(fc => fc.element === this);
+                if (index > -1) {
+                    fallingCharacters.splice(index, 1);
+                }
+                if (this.parentNode) {
+                    this.parentNode.removeChild(this);
+                }
+                if (gameActive) {
+                    spawnNewCharacter();
+                }
+            });
+        }
+
+        function startGame() {
+            startScreen.classList.add('hidden');
+            gameContainer.classList.remove('hidden');
+            gameOverScreen.classList.add('hidden');
+            
+            gameActive = true;
+            completedCount = 0;
+            score = 0;
+            timeLeft = 180;
+            fallingCharacters = [];
+            charactersContainer.innerHTML = ''; 
+            
+            completedCountElement.textContent = completedCount;
+            scoreElement.textContent = score;
+            timerElement.textContent = timeLeft;
+            
+            if (timer) clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft--;
+                timerElement.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    endGame("時間到！");
+                }
+            }, 1000);
+            
+            inputField.focus();
+            inputField.value = '';
+            setupInputListeners();
+
+            for (let i = 0; i < initialCharactersOnScreen; i++) {
+                spawnNewCharacter();
+            }
+        }
+        
+        let inputListenersSetup = false;
+        function setupInputListeners() {
+            if (inputListenersSetup) return;
+
+            const inputHandler = (e) => {
+                // 對於非組字輸入(如英文鍵盤)，即時處理
+                if (!isComposing) {
+                    processInput(e.target.value);
+                }
+            };
+
+            const compositionStartHandler = () => {
+                isComposing = true;
+            };
+
+            const compositionEndHandler = (e) => {
+                isComposing = false;
+                // 在組字結束後，處理最終的注音字串
+                processInput(e.data || e.target.value);
+                // 使用 setTimeout 確保瀏覽器完成渲染後再清空，避免衝突
+                setTimeout(() => {
+                    if (inputField.value === (e.data || e.target.value)) {
+                       inputField.value = '';
+                    }
+                }, 0);
+            };
+            
+            const keyDownHandler = (e) => {
+                if (e.key === ' ') {
+                    const currentInput = e.target.value;
+                    if (!currentInput) return;
+
+                    const potentialMatch = currentInput + ' ';
+                    const targetFc = findMatchingChar(potentialMatch);
+
+                    if (targetFc) {
+                        e.preventDefault();
+                        handleSuccess(targetFc);
+                        inputField.value = '';
+                    }
+                }
+            };
+
+            // 確保移除舊的監聽器，避免重複綁定
+            inputField.removeEventListener('input', inputHandler);
+            inputField.removeEventListener('keydown', keyDownHandler);
+            inputField.removeEventListener('compositionstart', compositionStartHandler);
+            inputField.removeEventListener('compositionend', compositionEndHandler);
+
+            // 重新綁定監聽器
+            inputField.addEventListener('input', inputHandler);
+            inputField.addEventListener('keydown', keyDownHandler);
+            inputField.addEventListener('compositionstart', compositionStartHandler);
+            inputField.addEventListener('compositionend', compositionEndHandler);
+
+            inputListenersSetup = true;
+        }
+
+        function findMatchingChar(typedValue) {
+            let targetFc = null;
+            let maxProgress = -1;
+
+            for (const fc of fallingCharacters) {
+                if ((fc.bopomofo === typedValue || fc.char === typedValue || fc.englishKeys.toLowerCase() === typedValue.toLowerCase()) && fc.element.parentNode) {
+                    const elapsedTime = (Date.now() - fc.startTime) / 1000;
+                    const progress = elapsedTime / fc.duration;
+                    
+                    if (progress > maxProgress) {
+                        maxProgress = progress;
+                        targetFc = fc;
+                    }
+                }
+            }
+            return targetFc;
+        }
+
+        function handleSuccess(fc) {
+            const fcIndex = fallingCharacters.findIndex(item => item === fc);
+            if (fcIndex === -1) return;
+
+            fc.element.classList.add('hit');
+            
+            const elapsedTime = (Date.now() - fc.startTime) / 1000;
+            const speedBonus = Math.max(1, Math.floor(10 - elapsedTime * 0.5));
+            const timeBonus = Math.floor(timeLeft / 15);
+            const pointsEarned = 50 + speedBonus * 5 + timeBonus * 2;
+            
+            score += pointsEarned;
+            scoreElement.textContent = score;
+            
+            const pointsIndicator = document.createElement('div');
+            pointsIndicator.textContent = `+${pointsEarned}`;
+            pointsIndicator.className = 'absolute text-yellow-300 font-bold text-lg sm:text-xl';
+            const rect = fc.element.getBoundingClientRect();
+            pointsIndicator.style.left = `${rect.left + window.scrollX}px`;
+            pointsIndicator.style.top = `${rect.top + window.scrollY}px`;
+            pointsIndicator.style.animation = 'fadeUpAndOut 1s forwards ease-out';
+            document.body.appendChild(pointsIndicator);
+            setTimeout(() => pointsIndicator.parentNode?.removeChild(pointsIndicator), 950);
+            
+            setTimeout(() => fc.element.parentNode?.removeChild(fc.element), 200);
+            fallingCharacters.splice(fcIndex, 1);
+            
+            completedCount++;
+            completedCountElement.textContent = completedCount;
+            
+            if (gameActive) {
+                spawnNewCharacter();
+            }
+        }
+        
+        function processInput(inputValue) {
+            if (!inputValue || !gameActive) return;
+            
+            const targetFc = findMatchingChar(inputValue);
+
+            if (targetFc) {
+                handleSuccess(targetFc);
+                // 英文輸入模式下，成功後立即清空
+                if (!isComposing) {
+                    inputField.value = '';
+                }
+            }
+        }
+        
+        function endGame(reason = "遊戲結束") {
+            if (!gameActive) return;
+            gameActive = false;
+            clearInterval(timer);
+            
+            gameOverScreen.classList.remove('hidden');
+            gameOverTitle.textContent = reason;
+            
+            finalCompletedElement.textContent = completedCount; 
+            finalScoreElement.textContent = score;
+            finalTimeElement.textContent = `${Math.max(0, timeLeft)}秒`;
+            
+            charactersContainer.innerHTML = '';
+            fallingCharacters = [];
+        }
+        
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = `
+            @keyframes fadeUpAndOut {
+                0% { opacity: 1; transform: translateY(0) scale(0.8); }
+                70% { opacity: 0.8; transform: translateY(-40px) scale(1.1); }
+                100% { opacity: 0; transform: translateY(-60px) scale(0.5); }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+        
+        window.addEventListener('resize', () => {
+            if (gameActive) {
+                const containerWidth = charactersContainer.clientWidth;
+                fallingCharacters.forEach(({ element }) => {
+                    if (element.parentNode) {
+                        let effectiveCharWidth = 80;
+                        if (window.innerWidth <= 768) effectiveCharWidth = 70;
+                        if (window.innerWidth <= 640) effectiveCharWidth = 65;
+                        
+                        const currentLeftPx = parseFloat(element.style.left);
+                        const lastContainerWidth = parseFloat(element.dataset.lastContainerWidth || containerWidth);
+                        
+                        let newLeft;
+                        if (element.dataset.lastContainerWidth && lastContainerWidth > 0) {
+                            const currentLeftRatio = currentLeftPx / lastContainerWidth;
+                            newLeft = currentLeftRatio * containerWidth;
+                        } else {
+                           newLeft = Math.random() * (containerWidth - effectiveCharWidth);
+                        }
+                        newLeft = Math.max(0, Math.min(newLeft, containerWidth - effectiveCharWidth));
+                        element.style.left = `${newLeft}px`;
+                        element.dataset.lastContainerWidth = containerWidth;
+                    }
+                });
+            }
+        });
+    </script>
+
+</body></html>
+
