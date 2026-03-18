@@ -8,17 +8,17 @@
     "theme_color": "#4fd1c5",
     "icons": [
         {
-            "src": "https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/72x72/2328.png",
+            "src": "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72/2328.png",
             "sizes": "72x72",
             "type": "image/png"
         },
         {
-            "src": "https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/128x128/2328.png",
+            "src": "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/128x128/2328.png",
             "sizes": "128x128",
             "type": "image/png"
         },
         {
-            "src": "https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/512x512/2328.png",
+            "src": "https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/512x512/2328.png",
             "sizes": "512x512",
             "type": "image/png"
         }
