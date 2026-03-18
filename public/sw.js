@@ -2,9 +2,6 @@ const CACHE_NAME = 'typecc-v1';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
-    './src/style.css',
-    './src/main.js',
-    'https://cdn.tailwindcss.com',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
 
