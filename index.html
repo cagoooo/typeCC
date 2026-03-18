@@ -40,12 +40,27 @@
         <div class="flex flex-col gap-4 w-full max-w-xs">
             <button id="start-button"
                 class="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-lg font-bold rounded-full hover:from-blue-600 hover:to-cyan-600 transition-all transform hover:scale-105 shadow-lg">開始遊戲</button>
+
+            <!-- 自訂詞庫入口 -->
+            <div class="flex gap-2">
+                <input type="text" id="wordset-code-input" placeholder="代碼"
+                    class="flex-1 px-4 py-2 bg-gray-800 border-2 border-indigo-400 rounded-lg text-white text-center font-bold uppercase focus:outline-none focus:border-cyan-400">
+                <button id="load-wordset-button"
+                    class="px-4 py-2 bg-indigo-600 rounded-lg font-bold hover:bg-indigo-700 transition-all">載入詞庫</button>
+            </div>
+
             <button id="leaderboard-button"
                 class="w-full px-6 py-3 bg-gray-800 border-2 border-indigo-500 text-white text-lg font-bold rounded-full hover:bg-gray-700 transition-all transform hover:scale-105 shadow-lg flex items-center justify-center">
                 <i class="fas fa-trophy mr-2 text-yellow-400"></i> 全球排行榜
             </button>
         </div>
     </div>
+
+    <!-- 教師工具按鈕 (固定右下角) -->
+    <button id="teacher-tool-button"
+        class="fixed bottom-6 right-6 w-12 h-12 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white/50 hover:text-white hover:bg-white/20 transition-all z-40 shadow-xl">
+        <i class="fas fa-chalkboard-teacher text-xl"></i>
+    </button>
 
     <!-- 遊戲畫面 -->
     <div id="game-container" class="hidden h-screen w-full relative">
@@ -134,6 +149,42 @@
                         <i class="fas fa-spinner fa-spin mr-2"></i> 正在載入排名...
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 教師工具 Modal -->
+    <div id="teacher-modal"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="bg-gray-900 border-2 border-cyan-500 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+            <div class="bg-cyan-900/50 p-4 flex justify-between items-center border-b border-cyan-500">
+                <h3 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-edit text-cyan-400 mr-2"></i> 自訂教學詞庫
+                </h3>
+                <button id="close-teacher-modal" class="text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">詞庫標題 (例如：第十課 生字複習)</label>
+                    <input type="text" id="new-wordset-title" placeholder="輸入標題..."
+                        class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">詞彙清單 (請用中文逗號、空格或換行分隔)</label>
+                    <textarea id="new-wordset-words" rows="5" placeholder="例如：台灣, 美麗, 科技, 注音..."
+                        class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-cyan-400 outline-none resize-none"></textarea>
+                </div>
+                <div id="publish-result" class="hidden p-3 bg-emerald-900/40 border border-emerald-500 rounded-lg">
+                    <p class="text-sm text-emerald-400">已成功發佈！您的詞庫代碼為：</p>
+                    <div id="generated-code" class="text-2xl font-black text-white text-center tracking-widest mt-1">
+                        ------</div>
+                </div>
+                <button id="publish-button"
+                    class="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold rounded-xl hover:from-cyan-600 hover:to-blue-600 transition-all shadow-lg flex items-center justify-center">
+                    <i class="fas fa-cloud-upload-alt mr-2"></i> 立即發佈並取得代碼
+                </button>
             </div>
         </div>
     </div>

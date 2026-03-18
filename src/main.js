@@ -3,6 +3,7 @@ import { audio } from './audio.js';
 
 import { auth, signInAnonymously } from './firebase.js';
 import { saveScore, getTopScores } from './leaderboard.js';
+import { publishWordset, fetchWordset } from './teacher.js';
 
 const bopomofoKeyMap = {
     'ㄅ': '1', 'ㄆ': 'q', 'ㄇ': 'a', 'ㄈ': 'z', 'ㄉ': '2', 'ㄊ': 'w', 'ㄋ': 's', 'ㄌ': 'x',
@@ -82,10 +83,38 @@ function convertBopomofoToEnglish(bopomofo) {
     return keyString;
 }
 
-const characterDataWithKeys = characterData.map(data => ({
+let characterDataWithKeys = characterData.map(data => ({
     ...data,
     englishKeys: convertBopomofoToEnglish(data.bopomofo)
 }));
+
+/**
+ * 注入外部詞庫
+ * @param {string[]} words 
+ */
+function injectWordset(words) {
+    if (!words || words.length === 0) return;
+
+    // 簡單的注音預判邏輯 (暫時僅支援單字與簡單詞彙)
+    // 這裡我們需要一個對應表，如果是外部輸入，我們可能需要串接 API 取得注音
+    // 目前先假設詞庫包含在 characterData 中的字，或提示使用者手動對齊
+    // [優化目標] 未來整合 API 自動轉換注音
+
+    const newCharacterData = words.map(w => {
+        // 嘗試在現有詞庫找對應注音
+        const found = characterData.find(c => c.char === w);
+        if (found) return found;
+        return { char: w, bopomofo: '???' }; // 標註未知
+    }).filter(item => item.bopomofo !== '???');
+
+    if (newCharacterData.length > 0) {
+        characterDataWithKeys = newCharacterData.map(data => ({
+            ...data,
+            englishKeys: convertBopomofoToEnglish(data.bopomofo)
+        }));
+        console.log("✅ 成功注入自訂詞庫:", words);
+    }
+}
 
 let gameActive = false;
 let fallingCharacters = [];
@@ -110,6 +139,19 @@ const finalCompletedElement = document.getElementById('final-completed');
 const finalScoreElement = document.getElementById('final-score');
 const finalTimeElement = document.getElementById('final-time');
 const restartButton = document.getElementById('restart-button');
+
+// 教師工具 & 自訂詞庫 UI 元件
+const teacherToolButton = document.getElementById('teacher-tool-button');
+const teacherModal = document.getElementById('teacher-modal');
+const closeTeacherModal = document.getElementById('close-teacher-modal');
+const publishButton = document.getElementById('publish-button');
+const newWordsetTitle = document.getElementById('new-wordset-title');
+const newWordsetWords = document.getElementById('new-wordset-words');
+const publishResult = document.getElementById('publish-result');
+const generatedCodeDisp = document.getElementById('generated-code');
+
+const wordsetCodeInput = document.getElementById('wordset-code-input');
+const loadWordsetButton = document.getElementById('load-wordset-button');
 
 // 難度選擇監聽器
 const updateDifficultyUI = () => {
@@ -520,6 +562,89 @@ async function renderLeaderboard() {
             <div class="font-bold text-cyan-400">${entry.score}</div>
         </div>
     `).join('');
+}
+
+// --- 教師工具邏輯 ---
+
+if (teacherToolButton) {
+    teacherToolButton.addEventListener('click', () => {
+        teacherModal.classList.remove('hidden');
+    });
+}
+
+if (closeTeacherModal) {
+    closeTeacherModal.addEventListener('click', () => {
+        teacherModal.classList.add('hidden');
+        publishResult.classList.add('hidden');
+    });
+}
+
+if (publishButton) {
+    publishButton.addEventListener('click', async () => {
+        const title = newWordsetTitle.value.trim();
+        const wordsStr = newWordsetWords.value.trim();
+
+        if (!title || !wordsStr) {
+            alert("請填寫標題與詞彙清單");
+            return;
+        }
+
+        // 解析詞彙 (支援逗號、空格、換行)
+        const words = wordsStr.split(/[,\s，\n]+/).filter(w => w.length > 0);
+
+        publishButton.disabled = true;
+        publishButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 正在發佈...';
+
+        try {
+            const code = await publishWordset(title, words, "匿名老師");
+            generatedCodeDisp.textContent = code;
+            publishResult.classList.remove('hidden');
+            newWordsetTitle.value = '';
+            newWordsetWords.value = '';
+        } catch (error) {
+            console.error("發佈失敗", error);
+            alert("發佈失敗，請稍後再試");
+        } finally {
+            publishButton.disabled = false;
+            publishButton.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2"></i> 立即發佈並取得代碼';
+        }
+    });
+}
+
+if (loadWordsetButton) {
+    loadWordsetButton.addEventListener('click', async () => {
+        const code = wordsetCodeInput.value.trim().toUpperCase();
+        if (!code) return;
+
+        loadWordsetButton.disabled = true;
+        loadWordsetButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        try {
+            const data = await fetchWordset(code);
+            if (data && data.words) {
+                injectWordset(data.words);
+                alert(`✅ 成功載入詞庫：${data.title}\n包含 ${data.words.length} 個詞彙`);
+            } else {
+                alert("❌ 找不到該代碼，請檢查是否輸入正確");
+            }
+        } catch (error) {
+            console.error("載入失敗", error);
+            alert("載入失敗，請檢查網路連線");
+        } finally {
+            loadWordsetButton.disabled = false;
+            loadWordsetButton.innerHTML = '載入詞庫';
+        }
+    });
+}
+
+// 檢查 URL 參數自動載入
+const urlParams = new URLSearchParams(window.location.search);
+const autoCode = urlParams.get('code');
+if (autoCode) {
+    setTimeout(async () => {
+        const data = await fetchWordset(autoCode);
+        if (data) injectWordset(data.words);
+    }, 1000);
 }
 
 // 分享成績功能
