@@ -180,6 +180,145 @@ ttsToggleBtn.addEventListener('click', () => {
     }
 });
 
+// ==========================================
+// 全螢幕沉浸模式 (Fullscreen API)
+// ==========================================
+const fullscreenToggle = document.getElementById('fullscreen-toggle');
+if (fullscreenToggle) {
+    fullscreenToggle.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.log(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    });
+    document.addEventListener('fullscreenchange', () => {
+        const icon = fullscreenToggle.querySelector('i');
+        if (document.fullscreenElement) {
+            icon.className = 'fas fa-compress';
+        } else {
+            icon.className = 'fas fa-expand';
+        }
+    });
+}
+
+// ==========================================
+// 動態伴學吉祥物 (Mascot)
+// ==========================================
+const mascot = document.getElementById('mascot');
+let mascotTimeout;
+
+function setMascotState(state, duration = 1000) {
+    if (!mascot) return;
+
+    // reset classes
+    mascot.className = `fixed bottom-4 left-4 z-[40] text-6xl drop-shadow-2xl pointer-events-none transition-transform duration-300 mascot-${state}`;
+
+    if (state === 'happy') mascot.textContent = '😸';
+    else if (state === 'shock') mascot.textContent = '🙀';
+    else mascot.textContent = '🐱';
+
+    clearTimeout(mascotTimeout);
+    if (state !== 'idle') {
+        mascotTimeout = setTimeout(() => {
+            setMascotState('idle');
+        }, duration);
+    }
+}
+
+// ==========================================
+// 行動裝置虛擬注音鍵盤 (Virtual Keyboard)
+// ==========================================
+const kbToggle = document.getElementById('keyboard-toggle');
+const kbContainer = document.getElementById('virtual-keyboard-container');
+const vkElement = document.getElementById('virtual-keyboard');
+
+const bopomofoLayout = [
+    [{ k: '1', v: 'ㄅ' }, { k: '2', v: 'ㄉ' }, { k: '3', v: 'ˇ' }, { k: '4', v: 'ˋ' }, { k: '5', v: 'ㄓ' }, { k: '6', v: 'ˊ' }, { k: '7', v: '˙' }, { k: '8', v: 'ㄚ' }, { k: '9', v: 'ㄞ' }, { k: '0', v: 'ㄢ' }, { k: '-', v: 'ㄦ' }],
+    [{ k: 'q', v: 'ㄆ' }, { k: 'w', v: 'ㄊ' }, { k: 'e', v: 'ㄍ' }, { k: 'r', v: 'ㄐ' }, { k: 't', v: 'ㄔ' }, { k: 'y', v: 'ㄗ' }, { k: 'u', v: 'ㄧ' }, { k: 'i', v: 'ㄛ' }, { k: 'o', v: 'ㄟ' }, { k: 'p', v: 'ㄣ' }],
+    [{ k: 'a', v: 'ㄇ' }, { k: 's', v: 'ㄋ' }, { k: 'd', v: 'ㄎ' }, { k: 'f', v: 'ㄑ' }, { k: 'g', v: 'ㄕ' }, { k: 'h', v: 'ㄘ' }, { k: 'j', v: 'ㄨ' }, { k: 'k', v: 'ㄜ' }, { k: 'l', v: 'ㄠ' }, { k: ';', v: 'ㄤ' }],
+    [{ k: 'z', v: 'ㄈ' }, { k: 'x', v: 'ㄌ' }, { k: 'c', v: 'ㄏ' }, { k: 'v', v: 'ㄒ' }, { k: 'b', v: 'ㄖ' }, { k: 'n', v: 'ㄙ' }, { k: 'm', v: 'ㄩ' }, { k: ',', v: 'ㄝ' }, { k: '.', v: 'ㄡ' }, { k: '/', v: 'ㄥ' }]
+];
+
+function initVirtualKeyboard() {
+    if (!vkElement) return;
+    bopomofoLayout.forEach(row => {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'vk-row';
+        row.forEach(keyData => {
+            const btn = document.createElement('button');
+            btn.className = 'vk-btn';
+            btn.textContent = keyData.v;
+            btn.dataset.key = keyData.k;
+
+            const handlePress = (e) => {
+                e.preventDefault();
+                inputField.focus();
+
+                inputField.value += keyData.v;
+
+                // Dispatch input event to trigger processInput
+                const inputEvent = new Event('input', { bubbles: true });
+                inputField.dispatchEvent(inputEvent);
+
+                // Trigger button animation
+                btn.classList.add('active');
+                setTimeout(() => btn.classList.remove('active'), 100);
+            };
+
+            btn.addEventListener('mousedown', handlePress);
+            btn.addEventListener('touchstart', handlePress, { passive: false });
+            rowDiv.appendChild(btn);
+        });
+        vkElement.appendChild(rowDiv);
+    });
+
+    // Add Backspace and Space bar row
+    const bottomRow = document.createElement('div');
+    bottomRow.className = 'vk-row mt-1';
+
+    const spaceBtn = document.createElement('button');
+    spaceBtn.className = 'vk-btn vk-btn-space';
+    spaceBtn.textContent = '空白鍵 (一聲)';
+    const handleSpace = (e) => {
+        e.preventDefault();
+        inputField.focus();
+        inputField.value += ' ';
+        inputField.dispatchEvent(new Event('input', { bubbles: true }));
+        spaceBtn.classList.add('active');
+        setTimeout(() => spaceBtn.classList.remove('active'), 100);
+    };
+    spaceBtn.addEventListener('mousedown', handleSpace);
+    spaceBtn.addEventListener('touchstart', handleSpace, { passive: false });
+    bottomRow.appendChild(spaceBtn);
+
+    const backspaceBtn = document.createElement('button');
+    backspaceBtn.className = 'vk-btn vk-btn-wide text-red-300 border-red-400';
+    backspaceBtn.innerHTML = '<i class="fas fa-backspace"></i>';
+    const handleBackspace = (e) => {
+        e.preventDefault();
+        inputField.focus();
+        inputField.value = inputField.value.slice(0, -1);
+        inputField.dispatchEvent(new Event('input', { bubbles: true }));
+        backspaceBtn.classList.add('active');
+        setTimeout(() => backspaceBtn.classList.remove('active'), 100);
+    };
+    backspaceBtn.addEventListener('mousedown', handleBackspace);
+    backspaceBtn.addEventListener('touchstart', handleBackspace, { passive: false });
+    bottomRow.appendChild(backspaceBtn);
+
+    vkElement.appendChild(bottomRow);
+}
+
+if (kbToggle) {
+    initVirtualKeyboard();
+    kbToggle.addEventListener('click', () => {
+        kbContainer.classList.toggle('translate-y-full');
+    });
+}
+
 function updateComboUI() {
     comboCountElement.textContent = combo;
     if (combo > 0) {
@@ -325,6 +464,7 @@ function spawnNewCharacter() {
         if (!this.classList.contains('hit')) {
             combo = 0;
             updateComboUI();
+            setMascotState('shock', 1000); // 漏字吉祥物驚嚇
         }
 
         const index = fallingCharacters.findIndex(fc => fc.element === this);
@@ -501,6 +641,7 @@ function handleSuccess(fc) {
 
     fc.element.classList.add('hit');
     audio.playHit();
+    setMascotState('happy', 1000); // 擊中吉祥物開心跳躍
 
     // 成功擊中後進行 TTS 語音朗讀
     if (ttsEnabled && 'speechSynthesis' in window) {

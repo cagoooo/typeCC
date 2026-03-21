@@ -16,6 +16,16 @@
 <body class="theme-dark">
     <!-- 全域控制列 (設定) -->
     <div class="fixed top-4 right-4 z-[60] flex gap-3">
+        <button id="keyboard-toggle"
+            class="w-10 h-10 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all shadow-lg"
+            title="開啟/關閉虛擬鍵盤">
+            <i class="fas fa-keyboard"></i>
+        </button>
+        <button id="fullscreen-toggle"
+            class="w-10 h-10 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all shadow-lg"
+            title="全螢幕模式">
+            <i class="fas fa-expand"></i>
+        </button>
         <button id="tts-toggle"
             class="w-10 h-10 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all shadow-lg"
             title="語音朗讀開關">
@@ -218,6 +228,20 @@
                     <i class="fas fa-cloud-upload-alt mr-2"></i> 立即發佈並取得代碼
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- 動態伴學吉祥物 (太空貓咪) -->
+    <div id="mascot"
+        class="mascot-idle fixed bottom-4 left-4 z-[40] text-6xl drop-shadow-2xl pointer-events-none transition-transform duration-300">
+        🐱
+    </div>
+
+    <!-- 虛擬注音鍵盤 (行動裝置適配) -->
+    <div id="virtual-keyboard-container"
+        class="fixed bottom-0 left-0 w-full z-[50] p-1 sm:p-2 bg-gray-900/95 backdrop-blur-lg border-t border-gray-700 transition-transform duration-300 translate-y-full shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+        <div id="virtual-keyboard" class="max-w-4xl mx-auto flex flex-col gap-1 w-full select-none">
+            <!-- 鍵盤列動態生成 -->
         </div>
     </div>
 
