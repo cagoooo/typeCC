@@ -59,7 +59,7 @@ const characterData = [
 
 let currentDifficulty = 'easy';
 const difficultySettings = {
-    beginner: { minDuration: 15, maxDuration: 25, spawnInterval: 4500, showKeys: true, showBopomofo: true, scoreMult: 0.5 },
+    beginner: { minDuration: 25, maxDuration: 40, spawnInterval: 7000, showKeys: true, showBopomofo: true, scoreMult: 0.5 },
     easy: { minDuration: 12, maxDuration: 18, spawnInterval: 3000, showKeys: true, showBopomofo: true, scoreMult: 1 },
     medium: { minDuration: 9, maxDuration: 14, spawnInterval: 2000, showKeys: false, showBopomofo: true, scoreMult: 1.5 },
     hard: { minDuration: 5, maxDuration: 10, spawnInterval: 1200, showKeys: false, showBopomofo: false, scoreMult: 2.5 }
@@ -139,6 +139,91 @@ const finalCompletedElement = document.getElementById('final-completed');
 const finalScoreElement = document.getElementById('final-score');
 const finalTimeElement = document.getElementById('final-time');
 const restartButton = document.getElementById('restart-button');
+
+// 連擊與特效 UI
+let combo = 0;
+let maxCombo = 0;
+const comboContainer = document.getElementById('combo-container');
+const comboCountElement = document.getElementById('combo-count');
+const inputContainer = document.getElementById('input-container');
+
+// 主題與 TTS
+const themeButtons = document.querySelectorAll('.theme-option');
+const ttsToggleBtn = document.getElementById('tts-toggle');
+let ttsEnabled = true;
+
+// 初始化主題設定
+const savedTheme = localStorage.getItem('typecc-theme') || 'dark';
+document.body.className = `theme-${savedTheme}`;
+themeButtons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const theme = e.target.dataset.theme;
+        document.body.className = `theme-${theme}`;
+        localStorage.setItem('typecc-theme', theme);
+    });
+});
+
+// 初始化 TTS UI
+if (ttsEnabled) {
+    ttsToggleBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+    ttsToggleBtn.classList.replace('text-white', 'text-cyan-300');
+}
+
+ttsToggleBtn.addEventListener('click', () => {
+    ttsEnabled = !ttsEnabled;
+    if (ttsEnabled) {
+        ttsToggleBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+        ttsToggleBtn.classList.replace('text-white', 'text-cyan-300');
+    } else {
+        ttsToggleBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+        ttsToggleBtn.classList.replace('text-cyan-300', 'text-white');
+    }
+});
+
+function updateComboUI() {
+    comboCountElement.textContent = combo;
+    if (combo > 0) {
+        comboContainer.classList.remove('hidden', 'opacity-50', 'scale-90');
+        comboContainer.classList.add('opacity-100', 'scale-100');
+    } else {
+        comboContainer.classList.add('opacity-50', 'scale-90');
+        inputContainer.classList.remove('combo-glow');
+        comboContainer.classList.remove('combo-glow');
+    }
+
+    if (combo >= 10) {
+        inputContainer.classList.add('combo-glow');
+        comboContainer.classList.add('combo-glow');
+    }
+}
+
+function createExplosion(x, y) {
+    const particleCount = 12;
+    const colors = ['#4fd1c5', '#fb923c', '#facc15', '#60a5fa', '#f472b6', '#ffffff'];
+    for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        const size = 5 + Math.random() * 5;
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 40 + Math.random() * 80;
+        const tx = Math.cos(angle) * velocity;
+        const ty = Math.sin(angle) * velocity;
+
+        particle.style.setProperty('--tx', `${tx}px`);
+        particle.style.setProperty('--ty', `${ty}px`);
+
+        document.body.appendChild(particle);
+        setTimeout(() => {
+            if (particle.parentNode) particle.parentNode.removeChild(particle);
+        }, 800);
+    }
+}
 
 // 教師工具 & 自訂詞庫 UI 元件
 const teacherToolButton = document.getElementById('teacher-tool-button');
@@ -221,6 +306,8 @@ function spawnNewCharacter() {
 
     charactersContainer.appendChild(charElement);
 
+    // TTS 語音朗讀已移至 handleSuccess (打中字元後才朗讀)
+
     const newFcData = {
         element: charElement,
         char: charData.char,
@@ -233,6 +320,13 @@ function spawnNewCharacter() {
 
     charElement.addEventListener('animationend', function handleAnimationEnd() {
         this.removeEventListener('animationend', handleAnimationEnd);
+
+        // 若動畫結束時仍沒有被擊中 (.hit)，代表觸底漏接了
+        if (!this.classList.contains('hit')) {
+            combo = 0;
+            updateComboUI();
+        }
+
         const index = fallingCharacters.findIndex(fc => fc.element === this);
         if (index > -1) {
             fallingCharacters.splice(index, 1);
@@ -240,7 +334,6 @@ function spawnNewCharacter() {
         if (this.parentNode) {
             this.parentNode.removeChild(this);
         }
-        // 移除自動補位的遞迴呼叫，改由定時生成器控制
     });
 }
 
@@ -274,6 +367,8 @@ function startGame() {
     gameActive = true;
     completedCount = 0;
     score = 0;
+    combo = 0;
+    maxCombo = 0;
     timeLeft = 180;
     fallingCharacters = [];
     charactersContainer.innerHTML = '';
@@ -281,6 +376,7 @@ function startGame() {
     completedCountElement.textContent = completedCount;
     scoreElement.textContent = score;
     timerElement.textContent = timeLeft;
+    updateComboUI();
 
     if (timer) clearInterval(timer);
     if (spawnTimer) clearTimeout(spawnTimer);
@@ -297,16 +393,22 @@ function startGame() {
     }, 1000);
 
     startSpawning(); // 開始定時生成
+    audio.playRandomBGM(); // 播放隨機背景音樂
 
 
-    inputField.focus();
     inputField.value = '';
     setupInputListeners();
 
-    for (let i = 0; i < initialCharactersOnScreen; i++) {
+    // 延遲 focus 確保 DOM 已經正確渲染移除 hidden 狀態
+    setTimeout(() => {
+        inputField.focus();
+    }, 50);
+
+    const initialCount = currentDifficulty === 'beginner' ? 2 : initialCharactersOnScreen;
+    for (let i = 0; i < initialCount; i++) {
         setTimeout(() => {
             if (gameActive) spawnNewCharacter();
-        }, i * 1000); // 初始字元以間隔方式出現，減少開局壓力
+        }, i * (currentDifficulty === 'beginner' ? 2000 : 1000)); // 初學者模式加長開局間隔並減少數量
     }
 }
 
@@ -372,8 +474,15 @@ function findMatchingChar(typedValue) {
     let targetFc = null;
     let maxProgress = -1;
 
+    // 取得去除頭尾空白的字串，用於中文與注音的精確比對
+    const exactTyped = typedValue.trim();
+    // 取得去除所有空白與括號的小寫字串，用於英文鍵盤的極度寬容比對 (例：允許玩家輸入括號或中間加空白)
+    const cleanedTyped = typedValue.replace(/[\s()]/g, '').toLowerCase();
+
     for (const fc of fallingCharacters) {
-        if ((fc.bopomofo === typedValue || fc.char === typedValue || fc.englishKeys.toLowerCase() === typedValue.toLowerCase()) && fc.element.parentNode) {
+        const cleanedFcEnglish = fc.englishKeys.replace(/[\s()]/g, '').toLowerCase();
+
+        if ((fc.bopomofo === exactTyped || fc.char === exactTyped || (cleanedTyped.length > 0 && cleanedFcEnglish === cleanedTyped)) && fc.element.parentNode) {
             const elapsedTime = (Date.now() - fc.startTime) / 1000;
             const progress = elapsedTime / fc.duration;
 
@@ -393,6 +502,21 @@ function handleSuccess(fc) {
     fc.element.classList.add('hit');
     audio.playHit();
 
+    // 成功擊中後進行 TTS 語音朗讀
+    if (ttsEnabled && 'speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(fc.char);
+        utterance.lang = 'zh-TW';
+        utterance.rate = 1.0;
+        window.speechSynthesis.speak(utterance);
+    }
+
+    // 觸發連擊與粒子動畫
+    combo++;
+    if (combo > maxCombo) maxCombo = combo;
+    updateComboUI();
+    const rect = fc.element.getBoundingClientRect();
+    createExplosion(rect.left + rect.width / 2 + window.scrollX, rect.top + rect.height / 2 + window.scrollY);
+
     const settings = difficultySettings[currentDifficulty];
     const elapsedTime = (Date.now() - fc.startTime) / 1000;
     const speedBonus = Math.max(1, Math.floor(10 - elapsedTime * 0.5));
@@ -406,7 +530,6 @@ function handleSuccess(fc) {
     const pointsIndicator = document.createElement('div');
     pointsIndicator.textContent = `+${pointsEarned}`;
     pointsIndicator.className = 'absolute text-yellow-300 font-bold text-lg sm:text-xl';
-    const rect = fc.element.getBoundingClientRect();
     pointsIndicator.style.left = `${rect.left + window.scrollX}px`;
     pointsIndicator.style.top = `${rect.top + window.scrollY}px`;
     pointsIndicator.style.animation = 'fadeUpAndOut 1s forwards ease-out';
@@ -438,9 +561,10 @@ function processInput(inputValue) {
     }
 }
 
-function endGame(reason = "遊戲結束") {
+function endGame(reason = "遊戲結束！") {
     if (!gameActive) return;
     gameActive = false;
+    audio.stopBGM(); // 停止背景音樂
     if (timer) clearInterval(timer);
     if (spawnTimer) clearTimeout(spawnTimer);
     audio.playGameOver();

@@ -5,14 +5,88 @@
 
 
 
+/* --- Global Theme Variables --- */
+:root {
+    --bg-gradient-1: #1a1a2e;
+    --bg-gradient-2: #16213e;
+    --text-main: #ffffff;
+    --char-bg: rgba(255, 255, 255, 0.15);
+    --char-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --panel-bg: rgba(31, 41, 55, 0.7);
+    /* gray-800 opacity-70 */
+}
+
+body.theme-light {
+    --bg-gradient-1: #e0f2fe;
+    /* sky-100 */
+    --bg-gradient-2: #bae6fd;
+    /* sky-200 */
+    --text-main: #1f2937;
+    /* gray-800 */
+    --char-bg: rgba(255, 255, 255, 0.7);
+    --char-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    --panel-bg: rgba(255, 255, 255, 0.85);
+}
+
+body.theme-ocean {
+    --bg-gradient-1: #0284c7;
+    /* sky-600 */
+    --bg-gradient-2: #1e3a8a;
+    /* blue-900 */
+    --text-main: #ffffff;
+    --char-bg: rgba(255, 255, 255, 0.3);
+    --char-shadow: inset -5px -5px 15px rgba(0, 0, 0, 0.2), inset 5px 5px 15px rgba(255, 255, 255, 0.6), 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
 body {
     font-family: 'Noto Sans TC', sans-serif;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    background: linear-gradient(135deg, var(--bg-gradient-1) 0%, var(--bg-gradient-2) 100%) !important;
+    color: var(--text-main) !important;
     overflow: hidden;
     /* Prevent scrollbars from falling characters */
     height: 100vh;
     margin: 0;
     padding: 0;
+}
+
+/* Light theme overrides for hardcoded Tailwind classes */
+body.theme-light #start-screen,
+body.theme-light .game-over-overlay {
+    background: linear-gradient(135deg, var(--bg-gradient-1), var(--bg-gradient-2)) !important;
+}
+
+body.theme-light h1,
+body.theme-light #game-over-title {
+    background-image: linear-gradient(to right, #0369a1, #1d4ed8) !important;
+    -webkit-text-fill-color: transparent;
+}
+
+body.theme-light p {
+    color: #334155 !important;
+}
+
+body.theme-light .bg-gray-800,
+body.theme-light .bg-black {
+    background-color: var(--panel-bg) !important;
+    border-color: #cbd5e1 !important;
+}
+
+body.theme-light #input-field {
+    color: #0f172a !important;
+    background-color: transparent !important;
+}
+
+body.theme-light #input-field::placeholder {
+    color: #64748b !important;
+}
+
+body.theme-light .text-white {
+    color: #1e293b !important;
+}
+
+/* Ocean theme bubbles */
+body.theme-ocean .falling-character {
+    border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .falling-character {
@@ -29,9 +103,9 @@ body {
     /* 加寬以容納按鍵提示 */
     height: 80px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--char-bg);
     backdrop-filter: blur(5px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--char-shadow);
     font-weight: 700;
     transition: transform 0.2s, opacity 0.2s;
     padding: 5px;
@@ -111,5 +185,47 @@ body {
     100% {
         opacity: 0;
         transform: translateY(-60px) scale(0.5);
+    }
+}
+
+/* Combo Glow Animation */
+@keyframes glow-pulse {
+    0% {
+        box-shadow: 0 0 10px rgba(251, 146, 60, 0.5), inset 0 0 10px rgba(251, 146, 60, 0.3);
+        border-color: #fb923c;
+    }
+
+    50% {
+        box-shadow: 0 0 25px rgba(251, 146, 60, 0.8), inset 0 0 15px rgba(251, 146, 60, 0.5);
+        border-color: #fdba74;
+    }
+
+    100% {
+        box-shadow: 0 0 10px rgba(251, 146, 60, 0.5), inset 0 0 10px rgba(251, 146, 60, 0.3);
+        border-color: #fb923c;
+    }
+}
+
+.combo-glow {
+    animation: glow-pulse 1.5s infinite;
+}
+
+/* Particle animation class */
+.particle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: explode 0.8s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes explode {
+    0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(var(--tx), var(--ty)) scale(0);
+        opacity: 0;
     }
 }

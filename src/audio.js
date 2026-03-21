@@ -1,6 +1,24 @@
 class GameAudio {
     constructor() {
         this.ctx = null;
+        this.bgmAudio = new Audio();
+        this.bgmAudio.loop = true;
+        this.bgmAudio.volume = 0.25; // 背景樂音量適中
+        this.tracks = [
+            "./bgm/bgm1.mp3",
+            "./bgm/bgm2.mp3"
+        ];
+    }
+
+    playRandomBGM() {
+        const randomIndex = Math.floor(Math.random() * this.tracks.length);
+        this.bgmAudio.src = this.tracks[randomIndex];
+        this.bgmAudio.play().catch(e => console.log('BGM 播放被瀏覽器阻擋: ', e));
+    }
+
+    stopBGM() {
+        this.bgmAudio.pause();
+        this.bgmAudio.currentTime = 0;
     }
 
     init() {
