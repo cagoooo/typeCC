@@ -59,7 +59,7 @@
 - Repository：`cagoooo/typeCC`
 - 可見性：公開
 - 主要技術：JavaScript、Vite、Firebase、Tailwind CSS
-- 線上入口：未在 GitHub repository metadata 設定
+- 線上入口：<https://cagoooo.github.io/typeCC/>
 
 ### 可以怎麼應用
 
