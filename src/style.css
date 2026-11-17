@@ -343,3 +343,72 @@ body.theme-ocean .falling-character {
 .vk-btn-space {
     max-width: 300px;
 }
+
+/* --- v1.3.1 開始畫面頁尾（作者署名） --- */
+#start-screen {
+    overflow-y: auto;
+    justify-content: center;
+    justify-content: safe center;
+}
+
+.site-footer {
+    background: rgba(3, 7, 18, 0.72);
+    border: 1px solid rgba(34, 211, 238, 0.3);
+    box-shadow: 0 0 40px rgba(34, 211, 238, 0.12);
+    flex-shrink: 0;
+}
+
+.site-footer__logo {
+    background: linear-gradient(135deg, #06b6d4, #6366f1);
+    box-shadow: 0 0 15px rgba(34, 211, 238, 0.45);
+}
+
+.site-footer__name {
+    background-image: linear-gradient(to right, #67e8f9, #93c5fd);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.site-footer__title { color: #f3f4f6; }
+.site-footer__muted { color: #9ca3af; }
+
+.site-footer__point {
+    background: rgba(17, 24, 39, 0.7);
+    border: 1px solid rgba(34, 211, 238, 0.2);
+}
+
+.site-footer__bottom { border-top: 1px solid rgba(34, 211, 238, 0.2); }
+
+.site-footer__author {
+    color: #67e8f9;
+    border-bottom: 1px dotted rgba(103, 232, 249, 0.7);
+    padding-bottom: 1px;
+    transition: color .2s, border-color .2s;
+}
+
+.site-footer__author:hover { color: #f9a8d4; border-bottom-color: #f9a8d4; }
+
+.site-footer__version {
+    color: #67e8f9;
+    border: 1px solid rgba(34, 211, 238, 0.4);
+    background: rgba(17, 24, 39, 0.8);
+}
+
+body.theme-light .site-footer {
+    background: rgba(255, 255, 255, 0.75);
+    border-color: #bae6fd;
+    box-shadow: 0 8px 30px rgba(2, 132, 199, 0.15);
+}
+
+body.theme-light .site-footer__name { background-image: linear-gradient(to right, #0369a1, #1d4ed8); }
+body.theme-light .site-footer__title { color: #1e293b; }
+body.theme-light .site-footer__muted { color: #475569; }
+body.theme-light .site-footer__point { background: rgba(255, 255, 255, 0.85); border-color: #cbd5e1; }
+body.theme-light .site-footer__bottom { border-top-color: #cbd5e1; }
+body.theme-light .site-footer__author { color: #0369a1; border-bottom-color: #0369a1; }
+body.theme-light .site-footer__version { color: #0369a1; background: #ffffff; border-color: #bae6fd; }
+
+@media print {
+    .site-footer { display: none; }
+}
