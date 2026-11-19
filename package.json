@@ -19,5 +19,9 @@
   "dependencies": {
     "firebase": "^10.8.0",
     "html2canvas": "^1.4.1"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.7",
+    "undici": "^6.29.1"
   }
 }
